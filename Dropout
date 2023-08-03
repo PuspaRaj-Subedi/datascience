@@ -1,0 +1,277 @@
+A. Regularization
+When an RNN has many weight parameters (e.g. the number of hidden units per cell is large or there are multiple RNN layers), it can have a tendency to overfit the training set and therefore generalize poorly to other data. To combat this, we need to regularize the RNN during training.
+
+Regularization refers to modifying the neural network in ways that mitigate the risk of overfitting during training. A particularly popular method of regularization for feed-forward neural networks is dropout. Dropout can also be used in recurrent neural networks, although it works slightly differently.
+
+B. Dropout in RNNs
+In feed-forward neural networks, dropout refers to randomly "dropping" or zeroing-out certain hidden neurons during training. This helps each neuron in the network become more proficient and less reliant on the other neurons in the network. The fraction of neurons that are randomly dropped out is referred to as the dropout rate.
+
+In recurrent neural networks, we apply dropout to the input and/or output of each cell unit. When dropout is applied to a cell's input/output at a particular time step, the cell's connection at that time step is zero'd out. So whatever, the previous input/output value was, it would be set to 0 due to the dropout.
+
+Dropout applied to an RNN with a single cell layer and 4 time steps. Each x_i represents a time step's input. Connections labeled with 0 have dropout applied to them (i.e. zero'd out).
+Dropout applied to an RNN with a single cell layer and 4 time steps. Each x_i represents a time step's input. Connections labeled with 0 have dropout applied to them (i.e. zero'd out).
+Applying dropout decreases the amount of cell computation that is used in the overall RNN output, thereby reducing the risk that the RNN will overfit the data.
+
+In TensorFlow, the function we use for recurrent neural network dropout is tf.compat.v1.nn.rnn_cell.DropoutWrapper, which takes in an RNN/LSTM cell as its required argument. A couple of the more important keyword arguments for the function are input_keep_prob and output_keep_prob.
+
+The input_keep_prob argument represents the probability of not dropping (i.e. keeping) the cell's input at each time step. The output_keep_prob argument represents the same thing for the cell's outputs. Their default values are both 1.0, which represents no dropout.
+
+When training your model, you can set either argument (or both), depending on how much regularization you want. Similarly, the argument values will also influence the amount of regularization for your model. Usually, a good starting point is around 0.5 (randomly dropping half the inputs/outputs), and then adjusting based on how the model trains.
+
+Time to Code!
+In this chapter, you'll be modifying the make_lstm_cell function to include dropout.
+
+We can apply (output-only) dropout to the created LSTM cell from the previous chapter. The node keep rate (i.e. 1 minus the dropout rate) is given by dropout_keep_prob.
+
+Set dropout_cell equal to tf.compat.v1.nn.rnn_cell.DropoutWrapper applied with cell as the required argument and dropout_keep_prob as the output_keep_prob keyword argument. Then return dropout_cell.
+
+import tensorflow as tf
+
+# LSTM Language Model
+class LanguageModel(object):
+    # Model Initialization
+    def __init__(self, vocab_size, max_length, num_lstm_units, num_lstm_layers):
+        self.vocab_size = vocab_size
+        self.max_length = max_length
+        self.num_lstm_units = num_lstm_units
+        self.num_lstm_layers = num_lstm_layers
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size)
+
+    def make_lstm_cell(self, dropout_keep_prob):
+        cell = tf.keras.layers.LSTMCell(self.num_lstm_units) 
+        # CODE UNDER THIS LINE
+
+
+
+
+A. Stacking layers
+Similar to how we can stack hidden layers in an MLP, we can also stack cell layers in an RNN. Adding cell layers allows the model to pick up on more complex features from the input sequence and therefore improve performance when trained on a large enough dataset.
+
+Diagram of an RNN with 2 cell layers. On the left is the rolled RNN, on the right is the unrolled RNN with 4 time steps.
+Diagram of an RNN with 2 cell layers. On the left is the rolled RNN, on the right is the unrolled RNN with 4 time steps.
+In the diagram above, the RNN contains 2 cell layers (which is just two cells). At each time step, the first cell's output becomes the input for the second cell, and the second cell's output is the overall RNN's output for that particular time step. One thing to note is that the cell states remain separate, i.e. there aren't any recurrent connections between the two cells.
+
+The input in this example is [5, 13, 0, 3], which represents the tokenized sequence for some four word sentence. 
+​
+ 
+ represent the outputs for the first layer. 
+
+ 
+ represent the outputs for the second layer.
+
+As with all other neural networks, adding layers can improve performance on larger datasets but also run the risk of overfitting the data. This makes regularization techniques such as dropout more important as we increase the size of our model.
+
+Time to Code!
+In this chapter, you'll be modifying the stacked_lstm_cells function to create a multi-layer LSTM model.
+
+To create a multi-layer LSTM model, we need to set up a list containing the LSTM cells we want to use in our model. The number of cells will be equal to self.num_lstm_layers.
+
+The dropout keep probability for each cell depends on whether we're training the model or not. If the model is training, we'll set the probability to 0.5, otherwise we'll set it to 1.0.
+
+Set dropout_keep_prob equal to 0.5 if is_training is True, otherwise set it to 1.0.
+
+Create a list called cell_list, which contains self.num_lstm_layers number of LSTM cells. Each LSTM cell in the list should be the output of a distinct call to self.make_lstm_cell, with dropout_keep_prob as the only argument.
+
+We can combine each of the LSTM cells into a usable TensorFlow object with the tf.keras.layers.StackedRNNCells function. The function takes in a list of cells as its required argument and returns a StackedRNNCells object representing the stacked cells.
+
+Set cell equal to tf.keras.layers.StackedRNNCells applied with cell_list as the required argument. Then return cell.
+
+import tensorflow as tf
+
+# LSTM Language Model
+class LanguageModel(object):
+    # Model Initialization
+    def __init__(self, vocab_size, max_length, num_lstm_units, num_lstm_layers):
+        self.vocab_size = vocab_size
+        self.max_length = max_length
+        self.num_lstm_units = num_lstm_units
+        self.num_lstm_layers = num_lstm_layers
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size)
+
+    # Create a cell for the LSTM
+    def make_lstm_cell(self, dropout_keep_prob):
+        cell = tf.keras.layers.LSTMCell(self.num_lstm_units)
+        return tf.compat.v1.nn.rnn_cell.DropoutWrapper(
+            cell, output_keep_prob=dropout_keep_prob)
+    
+    # Stack multiple layers for the LSTM
+    def stacked_lstm_cells(self, is_training):
+        # CODE HERE
+        if(is_training == true):
+            dropout_keep_prob = 0.5
+        else:
+            dropout_keep_prob = 1.0
+        cell_list =  [self.make_lstm_cell(dropout_keep_prob) for i in range(self.num_lstm_layers) ]
+        cell = tf.Keras.layers.StackedRNNCells(cell_list)
+        return cell
+        pass
+
+
+A. TensorFlow implementation
+In TensorFlow, the way we create and run an RNN is with the function tf.keras.layers.RNN. The function takes in two required arguments. The first is the cell object that is used to create the RNN (e.g. an LSTMCell, StackedRNNCells, etc.). The second is the batch of input sequences, which are usually first converted to word embedding sequences.
+
+Of the keyword arguments for the function, it is required that either initial_state or dtype is set. The initial_state argument specifies the starting state for the input cell object. We'll use this argument in later parts of this section.
+
+The dtype argument specifies the type of both the initial cell state and RNN output. Most of the time, we can just set this argument to tf.float32, since the RNN outputs are normally floating point numbers.
+
+Below is an example demonstrating how to use tf.keras.layers.RNN. Note that the input sequences have maximum length 10 and embedding size 12.
+
+import tensorflow as tf
+cell = tf.keras.layers.LSTMCell(units=7)
+# Input sequences for the LSTM
+# Shape: (batch_size, time_steps, embed_dim)
+input_sequences = tf.compat.v1.placeholder(
+    tf.float32,
+    shape=(None, 10, 20)
+)
+rnn = tf.keras.layers.RNN(cell, return_sequences=True)
+output = rnn(input_sequences)
+print(output)
+
+The tf.keras.layers.RNN function returns a tuple containing the RNN outputs as well as the final state of the RNN. For now, we only need to focus on the RNN output.
+
+You'll notice from the example that the output first and second dimensions are equal to the input batch. This is because the RNN calculates the output for each time step of each sequence in the input batch. The third dimension, however, is equal to the number of hidden units in the cell object. For RNNs with multiple cells (i.e. StackedRNNCells cell object), the third dimension is equal to the number of hidden units in the final cell.
+
+B. Sequence lengths
+Because each of the input sequences can have varying lengths, it is likely that many of them will contain padding. Since padding is essentially a sequence filler, and therefore adds nothing of value to the RNN, we don't really want the RNN to waste computation on the padded parts of a sequence.
+
+Instead, we can use the input_length argument in tf.keras.layers.RNN. This argument takes in a 1-D integer tensor, specifying the non-padded lengths of each sequence in the input batch.
+
+Below is an example that uses input_length in tf.keras.layers.RNN. The cell and input_sequences variables are the same as ones from the previous example. In this case, the input batch size is 5.
+
+import tensorflow as tf
+lens = [4, 9, 10, 5, 10]
+cell = tf.keras.layers.LSTMCell(7)
+input_sequences = tf.compat.v1.placeholder(
+    tf.float32,
+    shape=(None, 10, 20)
+)
+rnn=tf.keras.layers.RNN(
+    cell,
+    return_sequences=True,
+    input_length=lens,
+    dtype=tf.float32
+    )
+print(rnn)
+output = rnn(input_sequences)
+print(output[0])
+
+
+In this chapter, you'll be completing the run_lstm function, which runs the LSTM model on input sequences.
+
+As you can see, the input sequences have already been converted into embeddings, and the sequence lengths have been calculated. What's left for you to do is call the tf.keras.layers.RNN function to run our LSTM. We'll use sequence_lengths for the function's input_length argument to speed up the computation. We should also set the dtype argument to tf.float32.
+
+Set lstm_outputs equal to the first element of the tuple returned by tf.keras.layers.RNN, with cell and input_embeddings as the required arguments to the function. Also use the keyword arguments specified above.
+
+Return a tuple containing lstm_outputs as the first element and binary_sequences as the second element.
+
+
+import tensorflow as tf
+import numpy as np
+# LSTM Language Model
+class LanguageModel(object):
+    # Model Initialization
+    def __init__(self, vocab_size, max_length, num_lstm_units, num_lstm_layers):
+        self.vocab_size = vocab_size
+        self.max_length = max_length
+        self.num_lstm_units = num_lstm_units
+        self.num_lstm_layers = num_lstm_layers
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size)
+
+    # Create a cell for the LSTM
+    def make_lstm_cell(self, dropout_keep_prob):
+        cell = tf.keras.layers.LSTMCell(self.num_lstm_units, dropout=dropout_keep_prob)
+        return cell
+
+    # Stack multiple layers for the LSTM
+    def stacked_lstm_cells(self, is_training):
+        dropout_keep_prob = 0.5 if is_training else 1.0
+        cell_list = [self.make_lstm_cell(dropout_keep_prob) for i in range(self.num_lstm_layers)]
+        cell = tf.keras.layers.StackedRNNCells(cell_list)
+        return cell_list
+
+     # Convert input sequences to embeddings
+    def get_input_embeddings(self, input_sequences):
+        embedding_dim = int(self.vocab_size**0.25)
+        embedding=tf.keras.layers.Embedding(
+            self.vocab_size+1, embedding_dim, embeddings_initializer='uniform',
+            mask_zero=True, input_length=self.max_length
+        )
+        input_embeddings = embedding(input_sequences)
+        return input_embeddings
+    # Run the LSTM on the input sequences
+    def run_lstm(self, input_sequences, is_training):
+        cell = self.stacked_lstm_cells(is_training)
+        input_embeddings = self.get_input_embeddings(input_sequences)
+        binary_sequences = tf.math.sign(input_sequences)
+        sequence_lengths = tf.math.reduce_sum(binary_sequences, axis=1)
+        # CODE HERE
+
+        
+        pass
+
+
+
+For calculating LOss we convert langauge models output to logits.
+import tensorflow as tf
+# Output from an LSTM
+# Shape: (batch_size, time_steps, cell_size)
+lstm_outputs = tf.compat.v1.placeholder(tf.float32, shape=(None, 10, 7))
+vocab_size = 100
+#print(lstm_outputs)
+logits = tf.keras.layers.Dense(units=vocab_size)(lstm_outputs)
+# Target tokenized sequences
+# Shape: (batch_size, time_steps)
+target_sequences = tf.compat.v1.placeholder(tf.int64, shape=(None, 10))
+loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+    labels=target_sequences,
+    logits=logits)
+
+The function used to calculate the softmax cross entropy loss for feed-forward neural networks is tf.nn.softmax_cross_entropy_with_logits. However, we can only use this function if the labels and logits arguments both have the same shape.
+
+In our example, logits has 3 dimensions while labels (target_sequences) only has 2. In this case, the labels are referred to as sparse (i.e. they represent class indexes rather than one-hot vectors), so we use the sparse version of the loss function.
+
+
+
+B. Padding mask
+When we calculate the loss based on the model's outputs, we don't want to include the logits for every time step in each sequence. Specifically, we want to exclude the loss calculated for the padded time steps, since those values are meaningless. Therefore, we use a padding mask to zero-out the loss at padded time steps.
+
+The padding mask will have the same shape as the labels (i.e. target batch), but it will only contain 0's and 1's. Locations containing 0 represent padded time steps while locations containing 1 represent actual input sequence tokens. We multiply the padding mask by the loss to zero-out the padded time step locations.
+
+The code below demonstrates an example usage of a padding mask, with batch size of 1 and max sequence length of 5. Note that we cast the padding mask to tf.float32 so that it matches the type of the loss.
+
+
+import tensorflow as tf
+# loss: Softmax loss for LSTM
+with tf.compat.v1.Session() as sess:
+    print(repr(sess.run(loss)))
+
+# Same shape as loss
+pad_mask = tf.constant([
+    [1., 1., 1., 1., 0.],
+    [1., 1., 0., 0., 0.]
+])
+
+new_loss = loss * pad_mask
+with tf.compat.v1.Session() as sess:
+    print(repr(sess.run(new_loss)))
+
+
+Time to Code!
+In this chapter you'll be completing calculate_loss function, which calculates the model loss from the LSTM outputs.
+
+First, we'll convert the outputs of the LSTM model into logits.
+
+Set logits equal to tf.keras.layers.Dense applied with lstm_outputs and self.vocab_size as the two arguments.
+
+Note that logits has shape (batch_size, self.max_length, self.vocab_size) while output_sequences (the batch of tokenized target sequences) has shape (batch_size, self.max_length). Therefore, we use a sparse softmax cross entropy to compute the loss.
+
+Set batch_sequence_loss equal to tf.nn.sparse_softmax_cross_entropy_with_logits applied with output_sequences and logits for the labels and logits keyword arguments, respectively.
+
+To zero-out the loss for the padded time steps, we'll use binary_sequences (created in the previous chapter) as our padding mask. However, in order to use the padding mask, we need to first cast it to type tf.float32 (to match the type of the loss).
+
+Cast binary_sequences to type tf.float32 and then multiply it by batch_sequence_loss. Store the output in the variable unpadded_loss.
+
+The overall loss calculated by the function is the sum of the losses across every time step of each sequence.
+
+Set overall_loss equal to tf.math.reduce_sum applied with unpadded_loss as the only argument. Then return overall_loss.
