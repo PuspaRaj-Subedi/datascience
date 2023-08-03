@@ -1,3 +1,53 @@
+The way we look at an input sequence in both directions is with a model called a bidirectional LSTM, or BiLSTM for short. The model architecture is incredibly simple: it consists of a regular forwards LSTM and a backwards LSTM, which reads the input sequence in reverse.
+
+widget
+The above diagram shows a (unrolled) BiLSTM with 3 time steps. On the left is the forwards LSTM and on the right is the backwards LSTM. The sequence 
+[x1,x2,x3]
+ represents an input (embedded) sequence.
+
+Note: It is also possible to create a bidirectional RNN with general RNN cells rather than LSTM cells. However, since this Lab focuses on LSTM cells, we'll continue using the BiLSTM variant.
+
+C. BiLSTM in TensorFlow
+In TensorFlow, we can create and run a BiLSTM using the tf.keras.layers.Bidirectional function. This function is very similar to the tf.compat.v1.nn.dynamic_rnn function for regular LSTMs.
+
+The code below shows example usage of tf.keras.layers.Bidirectional.
+import tensorflow as tf
+
+
+cell = tf.keras.layers.LSTMCell(7)
+rnn = tf.keras.layers.RNN(cell, return_sequences=True ,
+                 go_backwards=True , return_state=True)
+
+# Embedded input sequences
+# Shape: (batch_size, time_steps, embed_dim)
+input_embeddings = tf.compat.v1.placeholder(
+    tf.float32, shape=(None, 10, 12))
+Bi_rnn= tf.keras.layers.Bidirectional(
+    rnn,
+    merge_mode=None
+    )
+outputs = Bi_rnn(input_embeddings)
+
+The tf.keras.layers.Bidirectional function returns a Bidirectional RNN object. Input embeddings passed as argument to Bidirectional RNN object. It returns tuple containing the LSTM outputs and the final LSTM states. Since a BiLSTM contains two LSTMs, both outputs and final_states shown in the example are tuples. We won't worry about final_states for now.
+
+However, note that outputs[0] represents the outputs of the forwards LSTM while outputs[1] represents the outputs of the backwards LSTM. This is important for calculating the model's logits (which we'll do in the next chapter).
+
+Time to Code!
+In this chapter you'll be completing the run_bilstm function, which runs a bidirectional LSTM on input sequences.
+
+The function has already been filled with code that converts the sequences to embeddings and uses the make_lstm_cell function to create the directional LSTM cells. Your task is to use the tf.keras.layers.Bidirectional function to run the BiLSTM.
+
+We only need to use the first element of the returned tuple from running the BiLSTM. We also use sequence_lengths and tf.float32 for the sequence_length and dtype keyword arguments, respectively.
+
+First create rnn object using tf.keras.layers.RNN with input argument go_backword = True
+
+Set Bi_rnn equals to the tf.keras.layers.Bidirectional. Use rnn and merge_mode=None as the required arguments.
+
+Pass input_embeddings as required argument in object Bi_rnn
+
+Return a tuple containing lstm_outputs as the first element and sequence_lengths as the second element.
+
+
 
 import tensorflow as tf
 
