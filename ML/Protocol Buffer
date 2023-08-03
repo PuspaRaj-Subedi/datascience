@@ -1,0 +1,64 @@
+A. TensorFlow protocol buffer
+Since protocol buffers use a structured format when storing data, they can be represented with Python classes. In TensorFlow, the tf.train.Example class represents the protocol buffer used to store data for the input pipeline.
+
+Each individual tf.train.Example object describes data for a single dataset observation (e.g. a single row in a data table). We convert raw data to a protocol buffer by initializing a tf.train.Example object with the data’s values.
+
+When we initialize a tf.train.Example object, we need to set that object’s features argument to a tf.train.Features object. The tf.train.Features class is initialized by setting the feature field to a dictionary that maps feature names to feature values.
+
+import tensorflow as tf
+
+features = tf.train.Features(feature=f_dict)  # f_dict is a dict
+ex = tf.train.Example(features=features)
+print(repr(ex))
+
+B. Features
+Each feature value is represented by a tf.train.Featur object, which is initialized with exactly one of the following fields:
+
+int64_list, for integer data values. Set with a tf.train.Int64List object.
+float_list, for floating point data values. Set with a tf.train.FloatList object.
+bytes_list, for byte string data values. Set with a tf.train.BytesList object.
+The code below creates tf.train.Feature objects from data values. The encode function used in the last example converts the string to bytes, so the type is compatible with tf.train.BytesList.
+
+import tensorflow as tf
+
+int_f = tf.train.Feature(
+    int64_list=tf.train.Int64List(value=[1, 2]))
+print(repr(int_f) + '\n')
+
+float_f = tf.train.Feature(
+    float_list=tf.train.FloatList(value=[-8.2, 5]))
+print(repr(float_f) + '\n')
+
+bytes_f = tf.train.Feature(
+    bytes_list=tf.train.BytesList(value=[b'\xff\xcc', b'\xac']))
+print(repr(bytes_f) + '\n')
+
+str_f = tf.train.Feature(
+    bytes_list=tf.train.BytesList(value=['joe'.encode()]))
+print(repr(str_f) + '\n')
+
+
+Note that the value field for the tf.train.Int64List, tf.train.FloatList, and tf.train.BytesList classes must be an iterable (e.g. list, NumPy array, or pandas Series). If a feature only has one data value, we would pass in an iterable containing the single value.
+
+With the tf.train.Feature objects, we can create the dictionary that’s used to initialize a tf.train.Features object.
+
+import tensorflow as tf
+
+f_dict = {
+    'int_vals': int_f,
+    'float_vals': float_f,
+    'bytes_vals': bytes_f,
+    'str_vals': str_f
+}
+
+features = tf.train.Features(feature=f_dict)
+
+print(repr(features))
+
+C. Bytes and text
+When dealing with datasets containing bytes (e.g. images or videos) or text (e.g. articles or sentences), it is beneficial to first read all the data files and then store the read data in the bytes_list field of a tf.train.Feature. This saves us from having to open each individual file within our input pipeline, which can drastically improve efficiency.
+
+
+
+
+
