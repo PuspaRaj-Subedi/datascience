@@ -1,0 +1,25 @@
+
+In this chapter, you'll be completing the make_lstm_cell function, which creates an LSTM cell with self.num_lstm_units as the number of hidden units in the cell.
+
+We use tf.keras.layers.LSTMCell to create the LSTM cell. This function is an initializer for an LSTMCell object, and the only required argument is the number of hidden units in the cell.
+
+Side note: For creating a basic RNN cell, you can use the tf.compat.v1.nn.rnn_cell.BasicRNNCell function.
+
+Set cell equal to tf.keras.layers.LSTMCell applied with self.num_lstm_units as the only argument. Then return cell.
+
+
+import tensorflow as tf
+
+# LSTM Language Model
+class LanguageModel(object):
+    # Model Initialization
+    def __init__(self, vocab_size, max_length, num_lstm_units, num_lstm_layers):
+        self.vocab_size = vocab_size
+        self.max_length = max_length
+        self.num_lstm_units = num_lstm_units
+        self.num_lstm_layers = num_lstm_layers
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size)
+
+    def make_lstm_cell(self, dropout_keep_prob):
+        #CODE HERE
+        pass
