@@ -1,1 +1,55 @@
 
+In this chapter, you'll be completing another helper function for the get_input_target_sequence function.
+
+The helper function you'll complete is the pad_sequences function. This function is used when the length of sequence is less than self.max_length.
+
+When the length of sequence is less than self.max_length, we need to add padding. The amount of padding is just the difference between the maximum sequence length and the length of sequence.
+
+Inside the pad_sequences function, set padding_amount equal to max_length minus the length of sequence.
+
+The Tokenizer object never uses 0 as an ID corresponding to a corpus word. This helps us a lot, since we can now safely use 0 as our padding token without worrying about conflicts.
+
+Set padding equal to a list of all 0, whose length is padding_amount.
+
+As in the previous chapter, input_sequence represents the input sequence with the final token removed, while target_sequence represents the target sequence with the first token removed.
+
+The difference here is that both the input and target sequences will be padded up to max_length.
+
+Set input_sequence equal to sequence[:-1] with padding added to the end. Also set target_sequence equal to sequence[1:] with padding added to the end.
+
+Return a tuple with input_sequence as the first element and target_sequence as the second element.
+
+
+
+import tensorflow as tf
+
+def pad_sequences(sequence, max_length):
+    # CODE HERE
+    padding_amount = max_length - len(sequence)
+    padding = [0 for i in range(padding_amount)]
+    input_sequence = sequence[:-1] + padding
+    target_sequence = sequence[1:] + padding
+    return input_sequence, target_sequence 
+    pass
+
+# LSTM Language Model
+class LanguageModel(object):
+    # Model Initialization
+    def __init__(self, vocab_size, max_length, num_lstm_units, num_lstm_layers):
+        self.vocab_size = vocab_size
+        self.max_length = max_length
+        self.num_lstm_units = num_lstm_units
+        self.num_lstm_layers = num_lstm_layers
+        self.tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size)
+
+    def get_input_target_sequence(self, sequence):
+        seq_len = len(sequence)
+        if seq_len >= self.max_length:
+            input_sequence, target_sequence = truncate_sequences(
+                sequence, self.max_length
+            )
+        else:
+            input_sequence, target_sequence = pad_sequences(
+                sequence, self.max_length
+            )
+        return input_sequence, target_sequence
